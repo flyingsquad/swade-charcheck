@@ -98,6 +98,16 @@ export class CharCheck {
 		if (!prompt)
 			prompt = "Character is balanced.";
 		html.find("#prompt").text(prompt);
+
+		let totalPrice = 0;
+		const gearTypes = ['armor', 'weapon', 'consumable', 'shield', 'gear'];
+		let gear  = this.actor.items.filter(it => gearTypes.includes(it.type));
+		for (let i = 0; i < gear.length; i++) {
+			totalPrice += gear[i].system.price;
+		}
+		
+		html.find("#totalPrice").text(totalPrice);
+		html.find("#currency").text(this.actor.system.details.currency);
 	}
 
 	createDialog(actor) {
@@ -152,6 +162,7 @@ export class CharCheck {
 					<td id="availTotal"></td>
 				</tr>
 			  </table>
+			  <p>Total Price of Gear: <span id="totalPrice"></span>, Currency: <span id="currency"></span></p>
 			</form>
 		  `;
 		
