@@ -1,0 +1,31 @@
+{
+  "id": "swade-charcheck",
+  "title": "Check Character Totals",
+  "description": "Check that the character has the right number of skills, attributes, Edges and Hindrances.",
+  "authors": [
+    {
+		"name": "flying-squad"
+    }
+  ],
+  "compatibility": {
+    "minimum": "11",
+    "verified": "12"
+  },
+  "esmodules": ["charcheck.js"],
+  "relationships": {
+    "systems": [
+      {
+        "id": "swade",
+        "type": "system",
+        "compatibility": {
+          "minimum": "4.2.0",
+          "maximum": "4.5"
+		}
+	  }
+	]
+  },
+  "url": "https://github.com/flyingsquad/swade-charcheck",
+  "manifest": "https://raw.githubusercontent.com/flyingsquad/swade-charcheck/main/module.json",
+  "version": "0.0.0",
+  "download": "https://github.com/flyingsquad/swade-charcheck/archive/refs/tags/v0.0.0.zip"
+}
