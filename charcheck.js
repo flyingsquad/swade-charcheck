@@ -10,6 +10,11 @@ export class CharCheck {
 	attrPoints = Number(game.settings.get('swade-charcheck', 'attributes'))*2;
 	availEdges = Number(game.settings.get('swade-charcheck', 'edges'))*2;
 	maxHind = Number(game.settings.get('swade-charcheck', 'hindrances'));
+	bornAhero = Number(game.settings.get('swade-charcheck', 'bornAhero'));
+	
+	initCap(str) {
+		return str.charAt(0).toUpperCase() + str.slice(1);
+	}
 
 	calcCost(html) {
 		html.find("#availSkills").text(this.skillPoints);
@@ -92,11 +97,82 @@ export class CharCheck {
 		if (ptsHind > this.maxHind)
 			prompt += "Too many Hindrances chosen. ";
 		if (totalAvail > ptsTotal && hindCost > 0)
-			prompt += "Unspent Hindrance points.";
+			prompt += "Unspent Hindrance points. ";
 		if (totalAvail < ptsTotal)
-			prompt += "Not enough Hindrance points.";
+			prompt += "Not enough Hindrance points. ";
+		
+		let rank = Math.min(16, Math.trunc(this.actor.system.advances.list.size / 4));
+		let ranks = ["Novice", "Seasoned", "Veteran", "Heroic", "Legendary"];
+
+		// Check requirements for edges.
+
+		let unsatReq = '';
+
+		for (let edge of edges) {
+			let fulfilled = true;
+			let reason = '';
+			let reasons = '';
+			let ors = '';
+			let orSuccess = false;
+			for (let req of edge.system.requirements) {
+				let failed = false;
+
+				switch (req.type) {
+				case 'rank':
+					if (this.bornAhero)
+						break;
+					if (rank < req.value) {
+						failed = true;
+						reason = 'Rank (' + ranks[req.value] + ')';
+					}
+					break;
+				case 'attribute':
+					if (this.actor.system.attributes[req.selector].die.sides < req.value) {
+						failed = true;
+						reason = `${this.initCap(req.selector)} d${req.value}+`;
+					}
+					break;
+				case 'skill':
+					let skill = this.actor.items.find(it => it.type == 'skill' && it.system.swid == req.selector);
+					if (!skill || skill.system.die.sides < req.value) {
+						failed = true;
+						reason = `${this.initCap(req.label)} d${req.value}+`;
+					}
+					break;
+				case 'edge':
+					let reqEdge = this.actor.items.find(it => it.type == 'edge' && it.system.swid == req.selector);
+					if (!reqEdge) {
+						failed = true;
+						reason = 'Edge: ' + req.label;
+					}
+				}
+				if (req.combinator == 'and') {
+					if (failed) {
+						fulfilled = false;
+						if (reasons)
+							reasons += ' and ';
+						reasons += reason;
+					}
+				} else if (req.combinator == 'or') {
+					if (ors)
+						ors += ' or ';
+					if (!failed)
+						orSuccess = true;
+					ors += reason;
+				}
+			}
+			if (!orSuccess && ors)
+				unsatReq += ors;
+			if (!fulfilled)
+				unsatReq += `${edge.name}: ${reasons}. `;
+		}
+		
+		if (unsatReq)
+			prompt += 'Unsatisfied Requirements: ' + unsatReq;
+
 		if (!prompt)
 			prompt = "Character is balanced.";
+
 		html.find("#prompt").text(prompt);
 
 		let totalPrice = 0;
@@ -108,6 +184,7 @@ export class CharCheck {
 		
 		html.find("#totalPrice").text(totalPrice);
 		html.find("#currency").text(this.actor.system.details.currency);
+		
 	}
 
 	createDialog(actor) {
@@ -273,6 +350,14 @@ Hooks.once('init', async function () {
 	  onChange: value => { // value is the new value of the setting
 		//console.log('swade-charcheck | budget: ' + value)
 	  }
+	});
+	game.settings.register('swade-charcheck', 'bornAhero', {
+	  name: 'Born a Hero',
+	  hint: 'Ignore Rank qualifications during character creation.',
+	  scope: 'client',     // "world" = sync to db, "client" = local storage
+	  config: true,       // false if you dont want it to show in module config
+	  type: Boolean,       // Number, Boolean, String, Object
+	  default: true,
 	});
 	
 });
