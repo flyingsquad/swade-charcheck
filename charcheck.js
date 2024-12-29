@@ -4,23 +4,27 @@
 export class CharCheck {
 	actor = null;
 	dlg = null;
-
-
-	skillPoints = Number(game.settings.get('swade-charcheck', 'skills'));
-	attrPoints = Number(game.settings.get('swade-charcheck', 'attributes'))*2;
-	availEdges = Number(game.settings.get('swade-charcheck', 'edges'))*2;
-	maxHind = Number(game.settings.get('swade-charcheck', 'hindrances'));
-	bornAhero = Number(game.settings.get('swade-charcheck', 'bornAhero'));
 	
 	initCap(str) {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	}
 
 	calcCost(html) {
-		html.find("#availSkills").text(this.skillPoints);
-		html.find("#availAttr").text(this.attrPoints);
-		html.find("#availEdges").text(this.availEdges);
-		html.find("#maxHind").text(this.maxHind);
+		let skillPoints = Number(game.settings.get('swade-charcheck', 'skills'));
+		let attrPoints = Number(game.settings.get('swade-charcheck', 'attributes'))*2;
+		let availEdges = Number(game.settings.get('swade-charcheck', 'edges'))*2;
+		let maxHind = Number(game.settings.get('swade-charcheck', 'hindrances'));
+		let bornAhero = Number(game.settings.get('swade-charcheck', 'bornAhero'));
+
+		// Check for this special ability gives humans an extra Edge.
+
+		if (this.actor.items.find(it => it.type == 'ability' && it.name == 'Adaptable'))
+			availEdges += 2;
+
+		html.find("#availSkills").text(skillPoints);
+		html.find("#availAttr").text(attrPoints);
+		html.find("#availEdges").text(availEdges);
+		html.find("#maxHind").text(maxHind);
 
 		let numAttr = 0;
 		let ptsAttr = 0;
@@ -32,17 +36,20 @@ export class CharCheck {
 
 		ptsAttr += numAttr * 2;
 
+		let ancestry = this.actor.items.find(it => it.type == 'ancestry');
+
 		let skillCost = 0;
 		let numSkills = 0;
 		let skills  = this.actor.items.filter(it => it.type == 'skill');
 		for (let i = 0; i < skills.length; i++) {
-			let sides = skills[i].system.die.sides;
-			let cost = (sides - 4)/2;
 			let skill = skills[i].system;
-			if (!skill.isCoreSkill)
-				cost++;
 			if (skill.attribute) {
+				let sides = skills[i].system.die.sides;
 				let linkedSkill = this.actor.system.attributes[skill.attribute].die.sides;
+
+				let cost = (Math.min(sides, linkedSkill) - 4)/2;
+				if (!skill.isCoreSkill)
+					cost++;
 				if (sides > linkedSkill)
 					cost += sides - linkedSkill;
 				let modifier = skill.die.modifier;
@@ -51,19 +58,31 @@ export class CharCheck {
 				skillCost += cost;
 			}
 		}
-		
+
+		// Count number of edges: ignore those that are in the grants
+		// for the ancestry.
+
 		let edges  = this.actor.items.filter(it => it.type == 'edge');
-		let numEdges = edges.length;
+		let numEdges = 0;
+		for (let e of edges) {
+			if (e.flags['swade-core-rules']) {
+				if (e.flags['swade-core-rules'].abilityGrant)
+					continue;
+			}
+			numEdges++;
+		}
 		let edgeCost = numEdges * 2;
 
 		let hindCost = 0;
 		let hindrances  = this.actor.items.filter(it => it.type == 'hindrance');
-		let numHind = hindrances.length;
-		for (let i = 0; i < hindrances.length; i++) {
-			let h = hindrances[i].system;
-			if (h.severity == 'either')
-				hindCost += h.major ? 2 : 1;
-			else if (h.severity == 'major')
+		let numHind = 0;
+		for (let hind of hindrances) {
+			if (ancestry && ancestry.system.grants.find(it => it.name == hind.name))
+				continue;
+			numHind++;
+			if (hind.system.severity == 'either')
+				hindCost += hind.system.major ? 2 : 1;
+			else if (hind.system.severity == 'major')
 				hindCost += 2;
 			else
 				hindCost++;
@@ -81,20 +100,20 @@ export class CharCheck {
 		html.find("#numHind").text(numHind);
 		html.find("#ptsHind").text(hindCost);
 
-		let totalAvail = this.skillPoints + this.attrPoints + this.availEdges + hindCost;
+		let totalAvail = skillPoints + attrPoints + availEdges + hindCost;
 
 		let ptsTotal = ptsAttr + skillCost + edgeCost;
 		html.find("#ptsTotal").text(ptsTotal);
 		html.find("#availTotal").text(totalAvail);
 		
 		let prompt = "";
-		if (ptsAttr < this.attrPoints)
+		if (ptsAttr < attrPoints)
 			prompt += "Too few attribute points spent. ";
-		if (skillCost < this.skillPoints)
+		if (skillCost < skillPoints)
 			prompt += "Too few skill points spent. ";
-		if (edgeCost < this.availEdges)
+		if (edgeCost < availEdges)
 			prompt += "Too few Edges chosen. ";
-		if (ptsHind > this.maxHind)
+		if (ptsHind > maxHind)
 			prompt += "Too many Hindrances chosen. ";
 		if (totalAvail > ptsTotal && hindCost > 0)
 			prompt += "Unspent Hindrance points. ";
@@ -119,7 +138,7 @@ export class CharCheck {
 
 				switch (req.type) {
 				case 'rank':
-					if (this.bornAhero)
+					if (bornAhero)
 						break;
 					if (rank < req.value) {
 						failed = true;
@@ -257,7 +276,7 @@ export class CharCheck {
 		let leaving = true;
 
 		this.dlg = new Dialog({
-		  title: "Check Character",
+		  title: `Check Character: ${this.actor.name}`,
 		  content: content,
 		  buttons: {
 			ok: {
@@ -335,7 +354,7 @@ Hooks.once('init', async function () {
 	  scope: 'client',     // "world" = sync to db, "client" = local storage
 	  config: true,       // false if you dont want it to show in module config
 	  type: Number,       // Number, Boolean, String, Object
-	  default: 4,
+	  default: 3,
 	  onChange: value => { // value is the new value of the setting
 		//console.log('swade-charcheck | budget: ' + value)
 	  }
