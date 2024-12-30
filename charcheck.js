@@ -25,34 +25,95 @@ export class CharCheck {
 		html.find("#availAttr").text(attrPoints);
 		html.find("#availEdges").text(availEdges);
 		html.find("#maxHind").text(maxHind);
+		
+		// Find all effects that increase attributes, which ancestries use
+		// to increase base attributes.
+		
+		let attrBonuses = [];
+		attrBonuses['agility'] = 0;
+		attrBonuses['smarts'] = 0;
+		attrBonuses['spirit'] = 0;
+		attrBonuses['strength'] = 0;
+		attrBonuses['vigor'] = 0;
+		
+		for (let item of this.actor.items) {
+			if (!item.effects || item.effects.length == 0)
+				continue;
+			for (let effect of item.effects) {
+				if (effect.changes) {
+					for (let change of effect.changes) {
+						let m = change.key.match(/system.attributes.([a-z]+)\.die.sides/);
+						if (m) {
+							let attr = m[1];
+							if (change.mode == 2) {
+								attrBonuses[attr] += Number(change.value);
+							}
+						}
+					}
+				}
+			}
+		}
 
 		let numAttr = 0;
 		let ptsAttr = 0;
-		numAttr += (this.actor.system.attributes.agility.die.sides - 4)/2 + this.actor.system.attributes.agility.die.modifier;
-		numAttr += (this.actor.system.attributes.smarts.die.sides - 4)/2 + this.actor.system.attributes.smarts.die.modifier;
-		numAttr += (this.actor.system.attributes.spirit.die.sides - 4)/2 + this.actor.system.attributes.spirit.die.modifier;
-		numAttr += (this.actor.system.attributes.strength.die.sides - 4)/2 + this.actor.system.attributes.strength.die.modifier;
-		numAttr += (this.actor.system.attributes.vigor.die.sides - 4)/2 + this.actor.system.attributes.vigor.die.modifier;
+		numAttr += (this.actor.system.attributes.agility.die.sides - 4 - attrBonuses['agility'])/2 + this.actor.system.attributes.agility.die.modifier;
+		numAttr += (this.actor.system.attributes.smarts.die.sides - 4 - attrBonuses['smarts'])/2 + this.actor.system.attributes.smarts.die.modifier;
+		numAttr += (this.actor.system.attributes.spirit.die.sides - 4 - attrBonuses['spirit'])/2 + this.actor.system.attributes.spirit.die.modifier;
+		numAttr += (this.actor.system.attributes.strength.die.sides - 4 - attrBonuses['strength'])/2 + this.actor.system.attributes.strength.die.modifier;
+		numAttr += (this.actor.system.attributes.vigor.die.sides - 4 - attrBonuses['vigor'])/2 + this.actor.system.attributes.vigor.die.modifier;
 
 		ptsAttr += numAttr * 2;
 
-		let ancestry = this.actor.items.find(it => it.type == 'ancestry');
+		let grants = [];
+		let skillGrants = {};
+
+		for (let item of this.actor.items) {
+			if (!item.system.grants)
+				continue
+			for (let grant of item.system.grants) {
+				let [type, modName, packName, itemType, itemUuid] = grant.uuid.split('.');
+				if (type == 'Compendium') {
+					const pack = game.packs.get(`${modName}.${packName}`);
+					if (pack) {
+						const item = pack.index.get(itemUuid);
+						if (item) {
+							if (grant?.mutation?.system?.die)
+								skillGrants[item.name] = grant.mutation.system.die.sides;
+							else
+								grants.push(item.name);
+						}
+					}
+				}
+			}
+		}
 
 		let skillCost = 0;
 		let numSkills = 0;
 		let skills  = this.actor.items.filter(it => it.type == 'skill');
-		for (let i = 0; i < skills.length; i++) {
-			let skill = skills[i].system;
+		for (let s of skills) {
+			let skill = s.system;
 			if (skill.attribute) {
-				let sides = skills[i].system.die.sides;
-				let linkedSkill = this.actor.system.attributes[skill.attribute].die.sides;
+				let sides = skill.die.sides + (skill.die.sides == 12 && skill.die.modifier > 0 ? skill.die.modifier * 2 : 0);
+				let attr = this.actor.system.attributes[skill.attribute]
+				let linkedAttr = attr.die.sides + (attr.die.sides == 12 && attr.die.modifier > 0 ? attr.die.modifier * 2 : 0);
+				let grantValue = 0
+				if (skillGrants[s.name])
+					grantValue = skillGrants[s.name];
+				let cost = 0;
 
-				let cost = (Math.min(sides, linkedSkill) - 4)/2;
-				if (!skill.isCoreSkill)
-					cost++;
-				if (sides > linkedSkill)
-					cost += sides - linkedSkill;
-				let modifier = skill.die.modifier;
+				if (grantValue) {
+					if (sides > grantValue) {
+						cost = (sides - grantValue) / 2;
+						if (sides > linkedAttr && grantValue < linkedAttr)
+							cost += (sides - linkedAttr) / 2;
+					}
+				} else {
+					cost = (Math.min(sides, linkedAttr) - 4)/2;
+					if (!skill.isCoreSkill)
+						cost++;
+					if (sides > linkedAttr)
+						cost += sides - linkedAttr;
+				}
 				if (cost > 0)
 					numSkills++;
 				skillCost += cost;
@@ -65,10 +126,13 @@ export class CharCheck {
 		let edges  = this.actor.items.filter(it => it.type == 'edge');
 		let numEdges = 0;
 		for (let e of edges) {
+			// Don't count edges that were granted by the ancestry.
 			if (e.flags['swade-core-rules']) {
 				if (e.flags['swade-core-rules'].abilityGrant)
 					continue;
 			}
+			if (grants.includes(e.name))
+				continue;
 			numEdges++;
 		}
 		let edgeCost = numEdges * 2;
@@ -77,7 +141,7 @@ export class CharCheck {
 		let hindrances  = this.actor.items.filter(it => it.type == 'hindrance');
 		let numHind = 0;
 		for (let hind of hindrances) {
-			if (ancestry && ancestry.system.grants.find(it => it.name == hind.name))
+			if (grants.includes(hind.name))
 				continue;
 			numHind++;
 			if (hind.system.severity == 'either')
