@@ -9,7 +9,7 @@ export class CharCheck {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	}
 
-	calcCost(html) {
+	async calcCost(html) {
 		let skillPoints = Number(game.settings.get('swade-charcheck', 'skills'));
 		let attrPoints = Number(game.settings.get('swade-charcheck', 'attributes'))*2;
 		let availEdges = Number(game.settings.get('swade-charcheck', 'edges'))*2;
@@ -25,6 +25,14 @@ export class CharCheck {
 		html.find("#availAttr").text(attrPoints);
 		html.find("#availEdges").text(availEdges);
 		html.find("#maxHind").text(maxHind);
+		
+		let advances = 0;
+		for (let adv of this.actor.system.advances.list)
+			if (adv.sort > advances)
+				advances = adv.sort;
+		html.find("#numAdv").text(advances ? advances : '--');
+		html.find("#ptsAdv").text(advances ? advances * 2 : '--');
+		html.find("#maxAdv").text(advances ? advances * 2 : '--');
 		
 		// Find all effects that increase attributes, which ancestries use
 		// to increase base attributes.
@@ -164,7 +172,7 @@ export class CharCheck {
 		html.find("#numHind").text(numHind);
 		html.find("#ptsHind").text(hindCost);
 
-		let totalAvail = skillPoints + attrPoints + availEdges + hindCost;
+		let totalAvail = skillPoints + attrPoints + availEdges + hindCost + advances * 2;
 
 		let ptsTotal = ptsAttr + skillCost + edgeCost;
 		html.find("#ptsTotal").text(ptsTotal);
@@ -267,10 +275,26 @@ export class CharCheck {
 		
 		html.find("#totalPrice").text(totalPrice);
 		html.find("#currency").text(this.actor.system.details.currency);
-		
+
+		if (advances == 0) {
+			// Record the initial value of skills before advances take place.
+			for (let skill of skills) {
+				// Check for Unskilled Attempt or other weird skill.
+				if (!skill.system.attribute)
+					continue;
+				let linkedAttr = this.actor.system.attributes[skill.system.attribute].die.sides;
+				let flags = skill.flags['swade-charcheck'];
+				if (flags && flags.initVal != skill.system.die.sides || flags.linkedAttr != linkedAttr) {
+					await this.actor.updateEmbeddedDocuments("Item",
+						[{ "_id": skill._id, "flags.swade-charcheck.initVal": skill.system.die.sides, "flags.swade-charcheck.linkedAttr": linkedAttr  }]
+					);
+				}
+			}
+		}
+
 	}
 
-	createDialog(actor) {
+	async createDialog(actor) {
 		this.actor = actor;
 
 		let content =
@@ -316,6 +340,12 @@ export class CharCheck {
 					<td id="maxHind"></td>
 				</tr>
 				<tr>
+					<td class="left">Advances</td>
+					<td id="numAdv"></td>
+					<td id="ptsAdv"></td>
+					<td id="maxAdv"></td>
+				</tr>
+				<tr>
 					<td class="left">TOTAL</td>
 					<td></td>
 					<td id="ptsTotal"></td>
@@ -326,8 +356,8 @@ export class CharCheck {
 			</form>
 		  `;
 		
-		function handleRender(pb, html) {
-			pb.calcCost(html);
+		async function handleRender(pb, html) {
+			await pb.calcCost(html);
 			html.on('change', html, (e) => {
 				let html = e.data;
 				switch (e.target.nodeName) {
