@@ -18,7 +18,7 @@ export class CharCheck {
 
 		// Check for this special ability gives humans an extra Edge.
 
-		if (this.actor.items.find(it => it.type == 'ability' && it.name == 'Adaptable'))
+		if (this.actor.items.find(it => it.type == 'ability' && it.system.swid == 'adaptable'))
 			availEdges += 2;
 
 		html.find("#availSkills").text(skillPoints);
@@ -28,7 +28,7 @@ export class CharCheck {
 		
 		let advances = 0;
 		for (let adv of this.actor.system.advances.list)
-			if (adv.sort > advances)
+			if (adv.sort > advances && !adv.planned)
 				advances = adv.sort;
 		html.find("#numAdv").text(advances ? advances : '--');
 		html.find("#ptsAdv").text(advances ? advances * 2 : '--');
@@ -86,7 +86,9 @@ export class CharCheck {
 						const item = pack.index.get(itemUuid);
 						if (item) {
 							if (grant?.mutation?.system?.die)
-								skillGrants[item.name] = grant.mutation.system.die.sides;
+								skillGrants[item.system.swid] = grant.mutation.system.die.sides;
+							else if (item?.system?.swid)
+								grants.push(item.system.swid);
 							else
 								grants.push(item.name);
 						}
@@ -105,8 +107,8 @@ export class CharCheck {
 				let attr = this.actor.system.attributes[skill.attribute]
 				let linkedAttr = attr.die.sides + (attr.die.sides == 12 && attr.die.modifier > 0 ? attr.die.modifier * 2 : 0);
 				let grantValue = 0
-				if (skillGrants[s.name])
-					grantValue = skillGrants[s.name];
+				if (skillGrants[s.system.swid])
+					grantValue = skillGrants[s.system.swid];
 				let cost = 0;
 
 				if (grantValue) {
@@ -139,7 +141,7 @@ export class CharCheck {
 				if (e.flags['swade-core-rules'].abilityGrant)
 					continue;
 			}
-			if (grants.includes(e.name))
+			if (grants.includes(e.system.swid))
 				continue;
 			numEdges++;
 		}
@@ -149,7 +151,7 @@ export class CharCheck {
 		let hindrances  = this.actor.items.filter(it => it.type == 'hindrance');
 		let numHind = 0;
 		for (let hind of hindrances) {
-			if (grants.includes(hind.name))
+			if (grants.includes(hind.system.swid))
 				continue;
 			numHind++;
 			if (hind.system.severity == 'either')
@@ -284,7 +286,7 @@ export class CharCheck {
 					continue;
 				let linkedAttr = this.actor.system.attributes[skill.system.attribute].die.sides;
 				let flags = skill.flags['swade-charcheck'];
-				if (flags && flags.initVal != skill.system.die.sides || flags.linkedAttr != linkedAttr) {
+				if (flags && flags?.initVal != skill.system.die.sides || flags?.linkedAttr != linkedAttr) {
 					await this.actor.updateEmbeddedDocuments("Item",
 						[{ "_id": skill._id, "flags.swade-charcheck.initVal": skill.system.die.sides, "flags.swade-charcheck.linkedAttr": linkedAttr  }]
 					);
