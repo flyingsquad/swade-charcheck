@@ -77,7 +77,10 @@ export class CharCheck {
 
 		for (let item of this.actor.items) {
 			if (!item.system.grants)
-				continue
+				continue;
+			// Charge normally for items granted by archetype.
+			if (item.subtype == 'archetype' || item.type == "ability")
+				continue;
 			for (let grant of item.system.grants) {
 				let [type, modName, packName, itemType, itemUuid] = grant.uuid.split('.');
 				if (type == 'Compendium') {
@@ -405,7 +408,7 @@ export class CharCheck {
 	}
 
 	static {
-		console.log("swade-charcheck | Swade Character Check character filter loaded.");
+		console.log("swade-charcheck | Swade Character Check loaded.");
 
 		Hooks.on("init", function() {
 		  console.log("swade-charcheck | Swade Character Check initialized.");
