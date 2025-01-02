@@ -154,7 +154,7 @@ export class CharCheck {
 		let hindrances  = this.actor.items.filter(it => it.type == 'hindrance');
 		let numHind = 0;
 		for (let hind of hindrances) {
-			if (grants.includes(hind.system.swid))
+			if (grants.includes(hind.system.swid) || grants.includes(hind.name))
 				continue;
 			numHind++;
 			if (hind.system.severity == 'either')
@@ -281,7 +281,7 @@ export class CharCheck {
 		html.find("#totalPrice").text(totalPrice);
 		html.find("#currency").text(this.actor.system.details.currency);
 
-		if (advances == 0) {
+		if (advances == 0 && this.actor.isOwner) {
 			// Record the initial value of skills before advances take place.
 			for (let skill of skills) {
 				// Check for Unskilled Attempt or other weird skill.
