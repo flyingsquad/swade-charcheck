@@ -274,8 +274,8 @@ export class CharCheck {
 		let totalPrice = 0;
 		const gearTypes = ['armor', 'weapon', 'consumable', 'shield', 'gear'];
 		let gear  = this.actor.items.filter(it => gearTypes.includes(it.type));
-		for (let i = 0; i < gear.length; i++) {
-			totalPrice += gear[i].system.price;
+		for (let g of gear) {
+			totalPrice += g.system.price * g.system.quantity;
 		}
 		
 		html.find("#totalPrice").text(totalPrice);
