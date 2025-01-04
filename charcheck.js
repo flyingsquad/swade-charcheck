@@ -87,7 +87,7 @@ export class CharCheck {
 					const pack = game.packs.get(`${modName}.${packName}`);
 					if (pack) {
 						const item = pack.index.get(itemUuid);
-						if (item) {
+						if (item && (item.type == 'skill' || item.type == 'edge' || item.type == 'hindrance')) {
 							if (grant?.mutation?.system?.die)
 								skillGrants[item.system.swid] = grant.mutation.system.die.sides;
 							else if (item?.system?.swid)
