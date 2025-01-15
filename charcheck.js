@@ -4,6 +4,7 @@
 export class CharCheck {
 	actor = null;
 	dlg = null;
+	hookId = null;
 	
 	initCap(str) {
 		return str.charAt(0).toUpperCase() + str.slice(1);
@@ -305,6 +306,14 @@ export class CharCheck {
 	async createDialog(actor) {
 		this.actor = actor;
 
+		//callback with no arguments declared, theses can be declared in the function definition
+		//in that case we use a .bind(this) for the function (unless static) is specific to the instance it's in
+		//also, keeping a reference to the hook index for later unregister
+
+		this.hookId = Hooks.on('renderCharacterSheet', this.renderCharacterSheet.bind(this));
+		actor.flags['swade-charcheck'] = {};
+		actor.flags['swade-charcheck'].charcheck = this;
+
 		let content =
 			  `<style>
 				td {
@@ -315,7 +324,7 @@ export class CharCheck {
 				}
 			  </style>
 			  <form>
-			  <p id="prompt"></p>
+			  <p id="prompt" height="60"></p>
 			  <table>
 				<tr>
 					<th class="left">Totals</th>
@@ -381,32 +390,30 @@ export class CharCheck {
 		  title: `Check Character: ${this.actor.name}`,
 		  content: content,
 		  buttons: {
-			ok: {
-			  label: "Check",
-			  callback: (html) => {
-				this.calcCost(html);
-				leaving = false;
-			  },
-			},
 			cancel: {
 			  label: "Done",
-			  callback: (html) => {
-				  leaving = true;
-			  }
+			  callback: (html) => {}
 			},
 		  },
-		  default: "ok",
 		  close: () => {
-			if (!leaving)
-				throw new Error('Rechecking character...');
-			leaving = true;
+			  this.finish();
 		  },
 		  render: (html) => { handleRender(this, html); }
 		});
 		this.dlg.render(true);
 	}
-	
+
+
+	renderCharacterSheet(actor, a2, a3) {
+		this.dlg.render(true);
+	}
+
 	finish() {
+		if (this.hookId) {
+			Hooks.off('updateActor', this.hookId);
+			this.hookId = null;
+			this.actor.flags['swade-charcheck'].charcheck = null;
+		}
 		console.log(`swade-charcheck | Finished setting abilities for ${this.actor.name}`);
 	}
 
@@ -492,14 +499,17 @@ function insertActorHeaderButtons(actorSheet, buttons) {
     onclick: async () => {
 		let pb = null;
 		try {
+			let existingCharcheck = actor.flags['swade-charcheck']?.charcheck;
+			if (existingCharcheck) {
+				existingCharcheck.dlg.render(true);
+				return false;
+			}
+			
 			pb = new CharCheck();
 			if (!await pb.createDialog(actor))
 				return false;
 		} catch (msg) {
 			ui.notifications.warn(msg);
-		} finally {
-			if (pb)
-				pb.finish();
 		}
 
     }
