@@ -191,9 +191,9 @@ export class CharCheck {
 			prompt += "Too few skill points spent. ";
 		if (edgeCost < availEdges)
 			prompt += "Too few Edges chosen. ";
-		if (ptsHind > maxHind)
+		if (hindCost > maxHind)
 			prompt += "Too many Hindrances chosen. ";
-		if (totalAvail > ptsTotal && hindCost > 0)
+		if (totalAvail > ptsTotal && hindCost > 0 && hindCost <= maxHind)
 			prompt += "Unspent Hindrance points. ";
 		if (totalAvail < ptsTotal)
 			prompt += "Not enough Hindrance points. ";
@@ -311,8 +311,6 @@ export class CharCheck {
 		//also, keeping a reference to the hook index for later unregister
 
 		this.hookId = Hooks.on('renderCharacterSheet', this.renderCharacterSheet.bind(this));
-		actor.flags['swade-charcheck'] = {};
-		actor.flags['swade-charcheck'].charcheck = this;
 
 		let content =
 			  `<style>
@@ -401,6 +399,8 @@ export class CharCheck {
 		  render: (html) => { handleRender(this, html); }
 		});
 		this.dlg.render(true);
+
+		return true;
 	}
 
 
@@ -412,10 +412,13 @@ export class CharCheck {
 		if (this.hookId) {
 			Hooks.off('updateActor', this.hookId);
 			this.hookId = null;
-			this.actor.flags['swade-charcheck'].charcheck = null;
+			if (CharCheck.activeDialogs[this.actor._id])
+				delete CharCheck.activeDialogs[this.actor._id];
 		}
 		console.log(`swade-charcheck | Finished setting abilities for ${this.actor.name}`);
 	}
+
+	static activeDialogs = {};
 
 	static {
 		console.log("swade-charcheck | Swade Character Check loaded.");
@@ -492,6 +495,8 @@ Hooks.once('init', async function () {
 
 function insertActorHeaderButtons(actorSheet, buttons) {
   let actor = actorSheet.object;
+  if (actor.type != 'character')
+	  return;
   buttons.unshift({
     label: "Check",
     icon: "fas fa-calculator",
@@ -499,15 +504,16 @@ function insertActorHeaderButtons(actorSheet, buttons) {
     onclick: async () => {
 		let pb = null;
 		try {
-			let existingCharcheck = actor.flags['swade-charcheck']?.charcheck;
-			if (existingCharcheck) {
-				existingCharcheck.dlg.render(true);
+			let dlg = CharCheck.activeDialogs[actor._id];
+			if (dlg) {
+				dlg.render(true);
 				return false;
 			}
-			
 			pb = new CharCheck();
 			if (!await pb.createDialog(actor))
 				return false;
+			CharCheck.activeDialogs[actor._id] = pb.dlg;
+			return true;
 		} catch (msg) {
 			ui.notifications.warn(msg);
 		}
