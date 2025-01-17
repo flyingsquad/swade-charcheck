@@ -270,7 +270,7 @@ export class CharCheck {
 		if (!prompt)
 			prompt = "Character is balanced.";
 
-		html.find("#prompt").text(prompt);
+		// Compute gear price and look for items with unsatisfied strength requirements.
 
 		let totalPrice = 0;
 		const gearTypes = ['armor', 'weapon', 'consumable', 'shield', 'gear'];
@@ -280,7 +280,14 @@ export class CharCheck {
 				totalPrice += g.system.price;
 			else
 				totalPrice += g.system.price * g.system.quantity;
+			if (g.system.minStr) {
+				const minstr = eval(g.system.minStr.replace(/^d/, ''));
+				if (this.actor.system.attributes.strength.die.sides < minstr)
+					prompt += `${g.name} requires Strength ${g.system.minStr}. `;
+			}
 		}
+
+		html.find("#prompt").text(prompt);
 		
 		html.find("#totalPrice").text(totalPrice);
 		html.find("#currency").text(this.actor.system.details.currency);
