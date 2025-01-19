@@ -16,6 +16,18 @@ export class CharCheck {
 		let availEdges = Number(game.settings.get('swade-charcheck', 'edges'))*2;
 		let maxHind = Number(game.settings.get('swade-charcheck', 'hindrances'));
 		let bornAhero = Number(game.settings.get('swade-charcheck', 'bornAhero'));
+		
+		let elderly = this.actor.items.find(it => it.type == 'hindrance' && it.system.swid == 'elderly');
+		let young = this.actor.items.find(it => it.type == 'hindrance' && it.system.swid == 'young');
+		if (elderly)
+			skillPoints += 5;
+		if (young) {
+			skillPoints -= 2;
+			if (young.system.major)
+				attrPoints -= 4;
+			else
+				attrPoints -= 2;
+		}
 
 		// Check for this special ability gives humans an extra Edge.
 
@@ -101,6 +113,7 @@ export class CharCheck {
 			}
 		}
 
+		let smartsSkills = 0;
 		let skillCost = 0;
 		let numSkills = 0;
 		let skills  = this.actor.items.filter(it => it.type == 'skill');
@@ -131,9 +144,11 @@ export class CharCheck {
 				if (cost > 0)
 					numSkills++;
 				skillCost += cost;
+				if (skill.attribute == 'smarts')
+					smartsSkills += cost;
 			}
 		}
-
+		
 		// Count number of edges: ignore those that are in the grants
 		// for the ancestry.
 
@@ -263,9 +278,12 @@ export class CharCheck {
 			if (!fulfilled)
 				unsatReq += `${edge.name}: ${reasons}. `;
 		}
-		
+
 		if (unsatReq)
 			prompt += 'Unsatisfied Requirements: ' + unsatReq;
+
+		if (elderly && smartsSkills < 5)
+			prompt += `Elderly must spend at least 5 points on Smarts skills. `;
 
 		if (!prompt)
 			prompt = "Character is balanced.";
