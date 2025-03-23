@@ -89,10 +89,10 @@ export class CharCheck {
 		let skillGrants = {};
 
 		for (let item of this.actor.items) {
-			if (!item.system.grants)
+			if (!item.system.grants || item.system.grants.length == 0)
 				continue;
 			// Charge normally for items granted by archetype.
-			if (item.subtype == 'archetype' || item.type == "ability")
+			if (item.type != "ancestry")
 				continue;
 			for (let grant of item.system.grants) {
 				let [type, modName, packName, itemType, itemUuid] = grant.uuid.split('.');
