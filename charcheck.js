@@ -26,6 +26,9 @@ export class CharCheck {
 					if (item.type == 'skill' || item.type == 'edge' || item.type == 'hindrance') {
 						if (grant?.mutation?.system?.die)
 							skillGrants[item.system.swid] = grant.mutation.system.die.sides;
+						else if (item.type == 'skill')
+							// Assume a skill granted gets d4 free.
+							skillGrants[item.system.swid] = 4;
 						else if (item?.system?.swid)
 							grants.push(item.system.swid);
 						else
@@ -117,8 +120,9 @@ export class CharCheck {
 		for (let item of this.actor.items) {
 			if (!item.system.grants || item.system.grants.length == 0)
 				continue;
-			// Charge normally for items not granted by archetype.
-			if (item.type != "ancestry")
+			// Charge normally for items granted by archetype. Items granted
+			// by Edges, ancestries, etc., are presumed to be free.
+			if (item.type == "ability" && item?.system?.subtype == 'archetype')
 				continue;
 			this.addGrants(grants, skillGrants, item);
 		}
