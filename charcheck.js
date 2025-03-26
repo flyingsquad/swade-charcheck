@@ -9,6 +9,32 @@ export class CharCheck {
 	initCap(str) {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	}
+	
+	addGrants(grants, skillGrants, item) {
+		if (!item?.system?.grants || item.system.grants.length == 0)
+			return;
+		
+		for (let grant of item.system.grants) {
+			let [type, modName, packName, itemType, itemUuid] = grant.uuid.split('.');
+			if (type == 'Compendium') {
+				const pack = game.packs.get(`${modName}.${packName}`);
+				if (pack) {
+					const item = pack.index.get(itemUuid);
+					if (!item)
+						continue;
+					this.addGrants(grants, skillGrants, item);
+					if (item.type == 'skill' || item.type == 'edge' || item.type == 'hindrance') {
+						if (grant?.mutation?.system?.die)
+							skillGrants[item.system.swid] = grant.mutation.system.die.sides;
+						else if (item?.system?.swid)
+							grants.push(item.system.swid);
+						else
+							grants.push(item.name);
+					}
+				}
+			}
+		}
+	}	
 
 	async calcCost(html) {
 		let skillPoints = Number(game.settings.get('swade-charcheck', 'skills'));
@@ -91,26 +117,10 @@ export class CharCheck {
 		for (let item of this.actor.items) {
 			if (!item.system.grants || item.system.grants.length == 0)
 				continue;
-			// Charge normally for items granted by archetype.
+			// Charge normally for items not granted by archetype.
 			if (item.type != "ancestry")
 				continue;
-			for (let grant of item.system.grants) {
-				let [type, modName, packName, itemType, itemUuid] = grant.uuid.split('.');
-				if (type == 'Compendium') {
-					const pack = game.packs.get(`${modName}.${packName}`);
-					if (pack) {
-						const item = pack.index.get(itemUuid);
-						if (item && (item.type == 'skill' || item.type == 'edge' || item.type == 'hindrance')) {
-							if (grant?.mutation?.system?.die)
-								skillGrants[item.system.swid] = grant.mutation.system.die.sides;
-							else if (item?.system?.swid)
-								grants.push(item.system.swid);
-							else
-								grants.push(item.name);
-						}
-					}
-				}
-			}
+			this.addGrants(grants, skillGrants, item);
 		}
 
 		let smartsSkills = 0;
