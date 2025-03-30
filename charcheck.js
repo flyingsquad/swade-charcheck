@@ -480,10 +480,10 @@ Hooks.once('init', async function () {
 	game.settings.register('swade-charcheck', 'attributes', {
 	  name: 'Points available for attributes',
 	  hint: 'The number of points available for buying attributes.',
-	  scope: 'client',     // "world" = sync to db, "client" = local storage
+	  scope: 'world',     // "world" = sync to db, "client" = local storage
 	  config: true,       // false if you dont want it to show in module config
 	  type: Number,       // Number, Boolean, String, Object
-	  default: 8,
+	  default: 5,
 	  onChange: value => { // value is the new value of the setting
 		//console.log('swade-charcheck | budget: ' + value)
 	  }
@@ -491,7 +491,7 @@ Hooks.once('init', async function () {
 	game.settings.register('swade-charcheck', 'skills', {
 	  name: 'Points available for skills',
 	  hint: 'The number of points available for buying skills.',
-	  scope: 'client',     // "world" = sync to db, "client" = local storage
+	  scope: 'world',     // "world" = sync to db, "client" = local storage
 	  config: true,       // false if you dont want it to show in module config
 	  type: Number,       // Number, Boolean, String, Object
 	  default: 15,
@@ -502,10 +502,10 @@ Hooks.once('init', async function () {
 	game.settings.register('swade-charcheck', 'edges', {
 	  name: 'Number of Edges',
 	  hint: 'The number of free Edges.',
-	  scope: 'client',     // "world" = sync to db, "client" = local storage
+	  scope: 'world',     // "world" = sync to db, "client" = local storage
 	  config: true,       // false if you dont want it to show in module config
 	  type: Number,       // Number, Boolean, String, Object
-	  default: 3,
+	  default: 0,
 	  onChange: value => { // value is the new value of the setting
 		//console.log('swade-charcheck | budget: ' + value)
 	  }
@@ -513,10 +513,10 @@ Hooks.once('init', async function () {
 	game.settings.register('swade-charcheck', 'hindrances', {
 	  name: 'Maximum Hindrances',
 	  hint: 'The maximum number of points of Hindrances.',
-	  scope: 'client',     // "world" = sync to db, "client" = local storage
+	  scope: 'world',     // "world" = sync to db, "client" = local storage
 	  config: true,       // false if you dont want it to show in module config
 	  type: Number,       // Number, Boolean, String, Object
-	  default: 6,
+	  default: 4,
 	  onChange: value => { // value is the new value of the setting
 		//console.log('swade-charcheck | budget: ' + value)
 	  }
@@ -524,10 +524,10 @@ Hooks.once('init', async function () {
 	game.settings.register('swade-charcheck', 'bornAhero', {
 	  name: 'Born a Hero',
 	  hint: 'Ignore Rank qualifications during character creation.',
-	  scope: 'client',     // "world" = sync to db, "client" = local storage
+	  scope: 'world',     // "world" = sync to db, "client" = local storage
 	  config: true,       // false if you dont want it to show in module config
 	  type: Boolean,       // Number, Boolean, String, Object
-	  default: true,
+	  default: false,
 	});
 	
 });
