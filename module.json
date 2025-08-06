@@ -9,7 +9,7 @@
   ],
   "compatibility": {
     "minimum": "11",
-    "verified": "12"
+    "verified": "13"
   },
   "esmodules": ["charcheck.js"],
   "relationships": {
@@ -19,13 +19,13 @@
         "type": "system",
         "compatibility": {
           "minimum": "4.2.0",
-          "maximum": "4.5"
+          "maximum": "5.0.3"
 		}
 	  }
 	]
   },
   "url": "https://github.com/flyingsquad/swade-charcheck",
   "manifest": "https://raw.githubusercontent.com/flyingsquad/swade-charcheck/main/module.json",
-  "version": "0.2.3",
-  "download": "https://github.com/flyingsquad/swade-charcheck/archive/refs/tags/v0.2.3.zip"
+  "version": "0.2.4",
+  "download": "https://github.com/flyingsquad/swade-charcheck/archive/refs/tags/v0.2.4.zip"
 }
