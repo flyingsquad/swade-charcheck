@@ -134,6 +134,8 @@ export class CharCheck {
 		for (let s of skills) {
 			let skill = s.system;
 			if (skill.attribute) {
+				if (skill.swid == 'none' || skill.swid == 'unskilled-attempt')
+					continue;
 				let sides = skill.die.sides + (skill.die.sides == 12 && skill.die.modifier > 0 ? skill.die.modifier * 2 : 0);
 				let attr = this.actor.system.attributes[skill.attribute]
 				let linkedAttr = attr.die.sides + (attr.die.sides == 12 && attr.die.modifier > 0 ? attr.die.modifier * 2 : 0);
