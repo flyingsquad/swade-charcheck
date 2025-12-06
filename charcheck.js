@@ -5,6 +5,7 @@ export class CharCheck {
 	actor = null;
 	dlg = null;
 	hookId = null;
+	alreadyRendering = false;
 	
 	initCap(str) {
 		return str.charAt(0).toUpperCase() + str.slice(1);
@@ -40,6 +41,9 @@ export class CharCheck {
 	}	
 
 	async calcCost(html) {
+		if (this.alreadyRendering)
+			return;
+		this.alreadyRendering = true;
 		let skillPoints = Number(game.settings.get('swade-charcheck', 'skills'));
 		let attrPoints = Number(game.settings.get('swade-charcheck', 'attributes'))*2;
 		let availEdges = Number(game.settings.get('swade-charcheck', 'edges'))*2;
@@ -341,7 +345,7 @@ export class CharCheck {
 				}
 			}
 		}
-
+		this.alreadyRendering = false;
 	}
 
 	async createDialog(actor) {
