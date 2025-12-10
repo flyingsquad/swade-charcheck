@@ -255,7 +255,7 @@ export class CharCheck {
 						break;
 					if (rank < req.value) {
 						failed = true;
-						reason = 'Rank (' + ranks[req.value] + ')';
+						reason = ranks[req.value];
 					}
 					break;
 				case 'attribute':
@@ -268,21 +268,35 @@ export class CharCheck {
 					let skill = this.actor.items.find(it => it.type == 'skill' && it.system.swid == req.selector);
 					if (!skill || skill.system.die.sides < req.value) {
 						failed = true;
-						reason = `${this.initCap(req.label)} d${req.value}+`;
+						reason = `${req.label} d${req.value}+`;
+					}
+					break;
+				case 'wildCard':
+					if ((this.actor.type == 'character') != req.value && this.actor.system.wildCard != req.value) {
+						failed = true;
+						reason = (req.value ? '' : "not ") + 'Wild Card';
 					}
 					break;
 				case 'edge':
-					let reqEdge = this.actor.items.find(it => it.type == 'edge' && it.system.swid == req.selector);
-					if (!reqEdge) {
+				case 'ancestry':
+				case 'power':
+				case 'hindrance':
+					let reqItem = this.actor.items.find(it => it.type == req.type && it.system.swid == req.selector);
+					if (!reqItem) {
 						failed = true;
-						reason = 'Edge: ' + req.label;
+						reason = req.label;
 					}
+					break;
+				case 'other':
+					reason = req.label;
+					failed = true;
+					break;
 				}
 				if (req.combinator == 'and') {
 					if (failed) {
 						fulfilled = false;
 						if (reasons)
-							reasons += ' and ';
+							reasons += ', ';
 						reasons += reason;
 					}
 				} else if (req.combinator == 'or') {
