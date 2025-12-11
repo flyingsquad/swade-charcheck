@@ -151,7 +151,7 @@ export class CharCheck {
 				if (grantValue) {
 					if (sides > grantValue) {
 						cost = (sides - grantValue) / 2;
-						if (sides > linkedAttr && grantValue < linkedAttr)
+						if (sides > linkedAttr && grantValue <= linkedAttr)
 							cost += (sides - linkedAttr) / 2;
 					}
 				} else {
@@ -288,8 +288,23 @@ export class CharCheck {
 					}
 					break;
 				case 'other':
+					// The only "defined" other requirement is Arcane Background (Any), so
+					// look for that pattern. Any other requirement is just a text string.
 					reason = req.label;
-					failed = true;
+					let search = reason.match(/(.+) *\(Any\)/i);
+					if (search) {
+						const str = search[1].trim();
+						let re = new RegExp(str, "i");
+						failed = this.actor.items.find(
+							it => it.name.match(re)
+						) == null;
+					} else {
+						// Otherwise look for a item with that name.
+						if (this.actor.items.find(it => it.name == reason) == null)
+							// Since "other" can be anything arbitrary, set failed so that
+							// it's always displayed if it wasn't an item.
+							failed = true;
+					}
 					break;
 				}
 				if (req.combinator == 'and') {
