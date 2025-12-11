@@ -291,6 +291,13 @@ export class CharCheck {
 					// The only "defined" other requirement is Arcane Background (Any), so
 					// look for that pattern. Any other requirement is just a text string.
 					reason = req.label;
+					if (reason.match(/Arcane Background \(Any\)/i)) {
+						if (this.actor.items.find(
+								it => it.system.isArcaneBackground
+							))
+							break;
+					}
+
 					let search = reason.match(/(.+) *\(Any\)/i);
 					if (search) {
 						const str = search[1].trim();
