@@ -251,7 +251,12 @@ export class CharCheck {
 
 				switch (req.type) {
 				case 'rank':
+					// If this setting rule in effect any edges can be taken.
 					if (bornAhero)
+						break;
+					// If Edge was grante by something it's free, and don't check
+					// the rank requirement.
+					if (grants.includes(edge.system.swid))
 						break;
 					if (rank < req.value) {
 						failed = true;

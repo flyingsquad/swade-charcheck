@@ -26,6 +26,6 @@
   },
   "url": "https://github.com/flyingsquad/swade-charcheck",
   "manifest": "https://raw.githubusercontent.com/flyingsquad/swade-charcheck/main/module.json",
-  "version": "0.2.8",
-  "download": "https://github.com/flyingsquad/swade-charcheck/archive/refs/tags/v0.2.8.zip"
+  "version": "0.2.9",
+  "download": "https://github.com/flyingsquad/swade-charcheck/archive/refs/tags/v0.2.9.zip"
 }
