@@ -8,7 +8,7 @@
     }
   ],
   "compatibility": {
-    "minimum": "11",
+    "minimum": "12",
     "verified": "13"
   },
   "esmodules": ["charcheck.js"],
@@ -26,6 +26,6 @@
   },
   "url": "https://github.com/flyingsquad/swade-charcheck",
   "manifest": "https://raw.githubusercontent.com/flyingsquad/swade-charcheck/main/module.json",
-  "version": "0.2.9",
-  "download": "https://github.com/flyingsquad/swade-charcheck/archive/refs/tags/v0.2.9.zip"
+  "version": "1.0.0",
+  "download": "https://github.com/flyingsquad/swade-charcheck/archive/refs/tags/v1.0.0.zip"
 }

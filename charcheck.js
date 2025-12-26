@@ -1,6 +1,33 @@
 /**	Perform standard point buy method for character abilities.
  */
  
+class CheckDlg extends foundry.applications.api.DialogV2 {
+	
+	charCheck = null;
+
+	constructor(cc, options) {
+		super(options);
+		this.charCheck = cc;
+	}
+
+	async _onRender(context, options) {
+		const html = $(this.element);
+		await this.charCheck.calcCost(html);
+		html.on('change', html, (e) => {
+			let html = e.data;
+			switch (e.target.nodeName) {
+			case 'INPUT':
+				break;
+			}
+		});
+	}
+	
+	close() {
+		this.charCheck.finish();
+		super.close();
+	}
+}
+
 export class CharCheck {
 	actor = null;
 	dlg = null;
@@ -360,7 +387,7 @@ export class CharCheck {
 			else
 				totalPrice += g.system.price * g.system.quantity;
 			if (g.system.minStr) {
-				const minstr = eval(g.system.minStr.replace(/^d/, ''));
+				const minstr = parseInt(g.system.minStr.replace(/^d/, ''));
 				if (this.actor.system.attributes.strength.die.sides < minstr)
 					prompt += `${g.name} requires Strength ${g.system.minStr}. `;
 			}
@@ -399,91 +426,78 @@ export class CharCheck {
 		this.hookId = Hooks.on('renderCharacterSheet', this.renderCharacterSheet.bind(this));
 
 		let content =
-			  `<style>
-				td {
-					text-align: center;
-				}
-				.left {
-					text-align: left;
-				}
-			  </style>
-			  <form>
-			  <p id="prompt" height="60"></p>
-			  <table>
-				<tr>
-					<th class="left">Totals</th>
-					<th>Num</th>
-					<th>Pts</th>
-					<th>Avail</th>
-				</tr>
-				<tr>
-					<td class="left">Attributes</td>
-					<td id="numAttr"></td>
-					<td id="ptsAttr"></td>
-					<td id="availAttr"></td>
-				</tr>
-				<tr>
-					<td class="left">Skills</td>
-					<td id="numSkills"></td>
-					<td id="ptsSkills"></td>
-					<td id="availSkills"></td>
-				</tr>
-				<tr class="left">
-					<td class="left">Edges</td>
-					<td id="numEdges"></td>
-					<td id="ptsEdges"></td>
-					<td id="availEdges"></td>
-				</tr>
-				<tr>
-					<td class="left">Hindrances</td>
-					<td id="numHind"></td>
-					<td id="ptsHind"></td>
-					<td id="maxHind"></td>
-				</tr>
-				<tr>
-					<td class="left">Advances</td>
-					<td id="numAdv"></td>
-					<td id="ptsAdv"></td>
-					<td id="maxAdv"></td>
-				</tr>
-				<tr>
-					<td class="left">TOTAL</td>
-					<td></td>
-					<td id="ptsTotal"></td>
-					<td id="availTotal"></td>
-				</tr>
-			  </table>
-			  <p>Total Price of Gear: <span id="totalPrice"></span>, Currency: <span id="currency"></span></p>
+			  `<form>
+			  <p id="prompt" style="display: flex; flex-flow: column; overflow: auto; height: 60px; width: 300px;"></p>
+			  <div style="display: table; width: 100%;">
+				<div style="display: table-row-group">
+					<div style="display: table-row;">
+						<div style="display: table-cell; text-align: left; font-weight: bold;">Totals</div>
+						<div style="display: table-cell; text-align: center; font-weight: bold;">Num</div>
+						<div style="display: table-cell; text-align: center; font-weight: bold;">Pts</div>
+						<div style="display: table-cell; text-align: center; font-weight: bold;">Avail</div>
+					</div>
+					<div style="display: table-row">
+						<div style="display: table-cell; text-align: left;">Attributes</div>
+						<div style="display: table-cell; text-align: center;" id="numAttr"></div>
+						<div style="display: table-cell; text-align: center;" id="ptsAttr"></div>
+						<div style="display: table-cell; text-align: center;" id="availAttr"></div>
+					</div>
+					<div style="display: table-row">
+						<div style="display: table-cell; text-align: left;">Skills</div>
+						<div style="display: table-cell;  text-align: center;" id="numSkills"></div>
+						<div style="display: table-cell;  text-align: center;" id="ptsSkills"></div>
+						<div style="display: table-cell;  text-align: center;" id="availSkills"></div>
+					</div>
+					<div style="display: table-row">
+						<div style="display: table-cell; text-align: left;">Edges</div>
+						<div style="display: table-cell; text-align: center;" id="numEdges"></div>
+						<div style="display: table-cell; text-align: center;" id="ptsEdges"></div>
+						<div style="display: table-cell; text-align: center;" id="availEdges"></div>
+					</div>
+					<div style="display: table-row">
+						<div style="display: table-cell; text-align: left;">Hindrances</div>
+						<div style="display: table-cell; text-align: center;" id="numHind"></div>
+						<div style="display: table-cell; text-align: center;" id="ptsHind"></div>
+						<div style="display: table-cell; text-align: center;" id="maxHind"></div>
+					</div>
+					<div style="display: table-row">
+						<div style="display: table-cell; text-align: left;">Advances</div>
+						<div style="display: table-cell; text-align: center;" id="numAdv"></div>
+						<div style="display: table-cell; text-align: center;" id="ptsAdv"></div>
+						<div style="display: table-cell; text-align: center;" id="maxAdv"></div>
+					</div>
+					<div style="display: table-row">
+						<div style="display: table-cell; text-align: left;">TOTAL</div>
+						<div style="display: table-cell; text-align: center;"></div>
+						<div style="display: table-cell; text-align: center;" id="ptsTotal"></div>
+						<div style="display: table-cell; text-align: center;" id="availTotal"></div>
+					</div>
+				</div>
+			  </div>
+			  <p style="margin-top: 0; margin-bottom: 0;">Total Price of Gear: <span id="totalPrice"></span>, Currency: <span id="currency"></span></p>
 			</form>
 		  `;
-		
-		async function handleRender(pb, html) {
-			await pb.calcCost(html);
-			html.on('change', html, (e) => {
-				let html = e.data;
-				switch (e.target.nodeName) {
-				case 'INPUT':
-					break;
-				}
-			});
-		}
 
-		let leaving = true;
-
-		this.dlg = new Dialog({
-		  title: `Check Character: ${this.actor.name}`,
+		this.dlg = new CheckDlg(this, {
+		  window: {
+			  title: `Check Character: ${this.actor.name}`,
+			  resizable: true,
+			  position: {
+				  width: 400
+			  }
+		  },
 		  content: content,
-		  buttons: {
-			cancel: {
-			  label: "Done",
-			  callback: (html) => {}
-			},
-		  },
-		  close: () => {
-			  this.finish();
-		  },
-		  render: (html) => { handleRender(this, html); }
+		  buttons: [
+			{
+				action: "cancel",
+				label: "Done",
+				callback: () => { 
+					this.finish();
+				}
+			}
+		  ]
 		});
+		
 		this.dlg.render(true);
 
 		return true;
@@ -607,5 +621,12 @@ function insertActorHeaderButtons(actorSheet, buttons) {
     }
   });
 }
+
+Hooks.on("closeCharacterSheet", (sheet) => {
+	let dlg = CharCheck.activeDialogs[sheet.actor._id];
+	if (dlg) {
+		dlg.close();
+	}
+});
 
 Hooks.on("getActorSheetHeaderButtons", insertActorHeaderButtons);
