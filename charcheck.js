@@ -486,8 +486,19 @@ export class CharCheck {
 			</form>
 		  `;
 
-		const left = actor.sheet.position.left;
-		const top = actor.sheet.position.top;
+		let left = actor.sheet.position.left;
+		let top = actor.sheet.position.top;
+		
+		const DLGWIDTH = 400;
+		const DLGHEIGHT = 500;
+
+		if (left === undefined || top === undefined) {
+			try {
+				left = canvas.screenDimensions[0] / 2 - DLGWIDTH / 2;
+				top = canvas.screenDimensions[1] / 2 - DLGHEIGHT / 2;
+			} catch {
+			}
+		}
 
 		this.dlg = new CheckDlg(this, {
 		  window: {
@@ -496,7 +507,8 @@ export class CharCheck {
 			  position: {
 				  left: left,
 				  top: top,
-				  width: 400
+				  width: DLGWIDTH,
+				  height: DLGHEIGHT
 			  }
 		  },
 		  content: content,
@@ -636,3 +648,43 @@ function insertActorHeaderButtons(actorSheet, buttons) {
 }
 
 Hooks.on("getHeaderControlsActorSheetV2", insertActorHeaderButtons);
+
+function documentContextOptions(app, options) {
+    options.push({
+        name: `Check Character Totals`,
+        icon: '<i class="fas fa-calculator"></i>',
+        condition: (li) => {
+			const actor = app.collection.get(li.dataset.entryId);
+			if (actor.type != 'character')
+				return false;
+			return game.user.isGM || actor.isOwner;
+		},
+        callback: async (li) =>  {
+            const actor = app.collection.get(li.dataset.entryId);
+            if (actor) {
+				let pb = null;
+				try {
+					let dlg = CharCheck.activeDialogs[actor._id];
+					if (dlg) {
+						dlg.render(true);
+						return false;
+					}
+					pb = new CharCheck();
+					if (!await pb.createDialog(actor))
+						return false;
+					CharCheck.activeDialogs[actor._id] = pb.dlg;
+					return true;
+				} catch (msg) {
+					ui.notifications.warn(msg);
+				}
+			}
+        },
+    });
+}
+
+const hooknames = [
+    "getActorContextOptions"
+];
+
+for (const hook of hooknames)
+    Hooks.on(hook, documentContextOptions);
