@@ -320,8 +320,8 @@ export class CharCheck {
 					}
 					break;
 				case 'other':
-					// The only "defined" other requirement is Arcane Background (Any), so
-					// look for that pattern. Any other requirement is just a text string.
+					// The only "defined" other requirements are Arcane Background (Any) and "Not [anything]", so
+					// look for those patterns. Any other requirement is just a text string.
 					reason = req.label;
 					if (reason.match(/Arcane Background \(Any\)/i)) {
 						if (this.actor.items.find(
@@ -338,11 +338,19 @@ export class CharCheck {
 							it => it.name.match(re)
 						) == null;
 					} else {
-						// Otherwise look for a item with that name.
-						if (this.actor.items.find(it => it.name == reason) == null)
-							// Since "other" can be anything arbitrary, set failed so that
-							// it's always displayed if it wasn't an item.
-							failed = true;
+						// Otherwise look for a item with that name or NOT with that name
+						let not = false;
+						if (reason.match(/not +/i)) {
+							reason = reason.replace(/not +/i, '');
+							if (this.actor.items.find(it => it.name == reason))
+								failed = true;
+						} else {
+							// Check for an item with this name, but if it's any other kind of requirement it will
+							// display an error because there's no way to determine if it's
+							// satisfied.
+							if (this.actor.items.find(it => it.name == reason) == null)
+								failed = true;
+						}
 					}
 					break;
 				}
@@ -478,11 +486,16 @@ export class CharCheck {
 			</form>
 		  `;
 
+		const left = actor.sheet.position.left;
+		const top = actor.sheet.position.top;
+
 		this.dlg = new CheckDlg(this, {
 		  window: {
 			  title: `Check Character: ${this.actor.name}`,
 			  resizable: true,
 			  position: {
+				  left: left,
+				  top: top,
 				  width: 400
 			  }
 		  },
@@ -594,14 +607,15 @@ Hooks.once('init', async function () {
 });
 
 function insertActorHeaderButtons(actorSheet, buttons) {
-  let actor = actorSheet.object;
+  let actor = actorSheet.actor;
   if (actor.type != 'character')
 	  return;
   buttons.unshift({
+	action: "add-to-title",
     label: "Check",
     icon: "fas fa-calculator",
     class: "charcheck-button",
-    onclick: async () => {
+    onClick: async () => {
 		let pb = null;
 		try {
 			let dlg = CharCheck.activeDialogs[actor._id];
@@ -617,16 +631,8 @@ function insertActorHeaderButtons(actorSheet, buttons) {
 		} catch (msg) {
 			ui.notifications.warn(msg);
 		}
-
     }
   });
 }
 
-Hooks.on("closeCharacterSheet", (sheet) => {
-	let dlg = CharCheck.activeDialogs[sheet.actor._id];
-	if (dlg) {
-		dlg.close();
-	}
-});
-
-Hooks.on("getActorSheetHeaderButtons", insertActorHeaderButtons);
+Hooks.on("getHeaderControlsActorSheetV2", insertActorHeaderButtons);
