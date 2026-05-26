@@ -615,7 +615,11 @@ Hooks.once('init', async function () {
 	  type: Boolean,       // Number, Boolean, String, Object
 	  default: false,
 	});
-	
+
+	game.swadeCharCheck = {
+		editAssignedCharacter: editAssignedCharacter
+	}	
+
 });
 
 function insertActorHeaderButtons(actorSheet, buttons) {
@@ -628,23 +632,34 @@ function insertActorHeaderButtons(actorSheet, buttons) {
     icon: "fas fa-calculator",
     class: "charcheck-button",
     onClick: async () => {
-		let pb = null;
-		try {
-			let dlg = CharCheck.activeDialogs[actor._id];
-			if (dlg) {
-				dlg.render(true);
-				return false;
-			}
-			pb = new CharCheck();
-			if (!await pb.createDialog(actor))
-				return false;
-			CharCheck.activeDialogs[actor._id] = pb.dlg;
-			return true;
-		} catch (msg) {
-			ui.notifications.warn(msg);
-		}
+		openCharCheckDialog(actor);
     }
   });
+}
+
+async function openCharCheckDialog(actor) {
+	let pb = null;
+	try {
+		let dlg = CharCheck.activeDialogs[actor._id];
+		if (dlg) {
+			dlg.render(true);
+			return false;
+		}
+		pb = new CharCheck();
+		if (!await pb.createDialog(actor))
+			return false;
+		CharCheck.activeDialogs[actor._id] = pb.dlg;
+		return true;
+	} catch (msg) {
+		ui.notifications.warn(msg);
+	}
+}
+
+async function editAssignedCharacter() {
+	if (game.user.character)
+		openCharCheckDialog(game.user.character);
+	else
+		ui.notifications.notify("You must have an assigned character before using this function.");
 }
 
 Hooks.on("getHeaderControlsActorSheetV2", insertActorHeaderButtons);
@@ -662,21 +677,7 @@ function documentContextOptions(app, options) {
         callback: async (li) =>  {
             const actor = app.collection.get(li.dataset.entryId);
             if (actor) {
-				let pb = null;
-				try {
-					let dlg = CharCheck.activeDialogs[actor._id];
-					if (dlg) {
-						dlg.render(true);
-						return false;
-					}
-					pb = new CharCheck();
-					if (!await pb.createDialog(actor))
-						return false;
-					CharCheck.activeDialogs[actor._id] = pb.dlg;
-					return true;
-				} catch (msg) {
-					ui.notifications.warn(msg);
-				}
+				openCharCheckDialog(actor);
 			}
         },
     });
