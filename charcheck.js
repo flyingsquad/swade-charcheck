@@ -656,11 +656,37 @@ async function openCharCheckDialog(actor) {
 }
 
 async function editAssignedCharacter() {
-	if (game.user.character)
+	const w = ui.activeWindow;
+	if (w && w.actor?.type == 'character') {
+		openCharCheckDialog(w.actor);
+		return;
+	}
+
+	if (game.user.character) {
+		game.user.character.sheet.render(true);
 		openCharCheckDialog(game.user.character);
-	else
-		ui.notifications.notify("You must have an assigned character before using this function.");
+	} else {
+		ui.notifications.notify("You must have an open player character sheet or an assigned character.");
+	}
 }
+
+
+
+function getControlButtons(controls) {
+	controls.tokens.tools['CharCheck'] = {
+		name: "CharCheck",
+		title: `Check Character`,
+		icon: "fas fa-calculator",
+		visible: true,
+		onChange: (event, active) => {
+			editAssignedCharacter();
+		},
+		button: true
+	};
+}
+
+Hooks.on('getSceneControlButtons', (controls) => getControlButtons(controls));
+
 
 Hooks.on("getHeaderControlsActorSheetV2", insertActorHeaderButtons);
 
