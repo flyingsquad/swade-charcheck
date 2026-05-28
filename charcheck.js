@@ -662,12 +662,22 @@ async function editAssignedCharacter() {
 		return;
 	}
 
+	if (canvas.tokens.controlled.length > 0) {
+		const actor = canvas.tokens.controlled[0].actor;
+		if (actor.type == 'character') {
+			actor.sheet.render(true);
+			openCharCheckDialog(actor);
+			return;
+		}
+	}
+
 	if (game.user.character) {
 		game.user.character.sheet.render(true);
 		openCharCheckDialog(game.user.character);
-	} else {
-		ui.notifications.notify("You must have an open player character sheet or an assigned character.");
+		return;
 	}
+
+	ui.notifications.notify("You must have an open player character sheet or an assigned character.");
 }
 
 
