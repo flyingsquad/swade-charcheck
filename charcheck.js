@@ -163,7 +163,9 @@ export class CharCheck {
 		let numSkills = 0;
 		let skills  = this.actor.items.filter(it => it.type == 'skill');
 		for (let s of skills) {
-			let skill = s.system;
+			// Use the "source" skill, rather than the displayed skill
+			// This will ignore any bonuses given by effects.
+			let skill = s._source.system;
 			if (skill.attribute) {
 				if (skill.swid == 'none' || skill.swid == 'unskilled-attempt')
 					continue;
