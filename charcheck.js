@@ -211,6 +211,13 @@ export class CharCheck {
 			}
 			if (grants.includes(e.system.swid))
 				continue;
+			try {
+				if (e.getFlag('super-noir', 'ID'))
+				// Added by super power.
+					continue;
+			} catch (e) {
+				// Ignore error if super-noir not defined.
+			}
 			numEdges++;
 		}
 		let edgeCost = numEdges * 2;
