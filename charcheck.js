@@ -126,7 +126,7 @@ export class CharCheck {
 						let m = change.key.match(/system.attributes.([a-z]+)\.die.sides/);
 						if (m) {
 							let attr = m[1];
-							if (change.mode == 2) {
+							if (change.type == 'add') {
 								attrBonuses[attr] += Number(change.value);
 							}
 						}
@@ -624,6 +624,14 @@ Hooks.once('init', async function () {
 	  type: Boolean,       // Number, Boolean, String, Object
 	  default: false,
 	});
+	game.settings.register('swade-charcheck', 'npc', {
+	  name: 'Check NPCs',
+	  hint: 'Allow checking of NPCs.',
+	  scope: 'world',     // "world" = sync to db, "client" = local storage
+	  config: true,       // false if you dont want it to show in module config
+	  type: Boolean,       // Number, Boolean, String, Object
+	  default: false,
+	});
 
 	game.swadeCharCheck = {
 		editAssignedCharacter: editAssignedCharacter
@@ -631,9 +639,17 @@ Hooks.once('init', async function () {
 
 });
 
+function canCheck(actor) {
+	if (!actor)
+		return false;
+	if (actor.type == 'character')
+		return true;
+	return actor.type == 'npc' && game.settings.get('swade-charcheck', 'npc');
+}
+
 function insertActorHeaderButtons(actorSheet, buttons) {
   let actor = actorSheet.actor;
-  if (actor.type != 'character')
+  if (!canCheck(actor))
 	  return;
   buttons.unshift({
 	action: "add-to-title",
@@ -666,14 +682,14 @@ async function openCharCheckDialog(actor) {
 
 async function editAssignedCharacter() {
 	const w = ui.activeWindow;
-	if (w && w.actor?.type == 'character') {
+	if (w && canCheck(w.actor)) {
 		openCharCheckDialog(w.actor);
 		return;
 	}
 
 	if (canvas.tokens.controlled.length > 0) {
 		const actor = canvas.tokens.controlled[0].actor;
-		if (actor.type == 'character') {
+		if (canCheck(actor)) {
 			actor.sheet.render(true);
 			openCharCheckDialog(actor);
 			return;
@@ -715,7 +731,7 @@ function documentContextOptions(app, options) {
         icon: '<i class="fas fa-calculator"></i>',
         condition: (li) => {
 			const actor = app.collection.get(li.dataset.entryId);
-			if (actor.type != 'character')
+			if (!canCheck(actor))
 				return false;
 			return game.user.isGM || actor.isOwner;
 		},
