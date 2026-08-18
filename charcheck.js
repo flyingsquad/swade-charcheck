@@ -429,6 +429,12 @@ export class CharCheck {
 					);
 				}
 			}
+			for (let edge of edges)
+				await edge.setFlag('swade-charcheck', 'initial', true);
+			for (let hindrance of hindrances)
+				await hindrance.setFlag('swade-charcheck', 'initial', true);
+			for (let attr of ['agility', 'smarts', 'spirit', 'strength', 'vigor'])
+				await this.actor.setFlag('swade-charcheck', attr, this.actor.system.attributes[attr].die.sides);
 		}
 		this.alreadyRendering = false;
 	}
