@@ -38,31 +38,25 @@ export class CharCheck {
 		return str.charAt(0).toUpperCase() + str.slice(1);
 	}
 	
-	addGrants(grants, skillGrants, item) {
+	async addGrants(grants, skillGrants, item) {
 		if (!item?.system?.grants || item.system.grants.length == 0)
 			return;
 		
 		for (let grant of item.system.grants) {
-			let [type, modName, packName, itemType, itemUuid] = grant.uuid.split('.');
-			if (type == 'Compendium') {
-				const pack = game.packs.get(`${modName}.${packName}`);
-				if (pack) {
-					const item = pack.index.get(itemUuid);
-					if (!item)
-						continue;
-					this.addGrants(grants, skillGrants, item);
-					if (item.type == 'skill' || item.type == 'edge' || item.type == 'hindrance') {
-						if (grant?.mutation?.system?.die)
-							skillGrants[item.system.swid] = grant.mutation.system.die.sides;
-						else if (item.type == 'skill')
-							// Assume a skill granted gets d4 free.
-							skillGrants[item.system.swid] = 4;
-						else if (item?.system?.swid)
-							grants.push(item.system.swid);
-						else
-							grants.push(item.name);
-					}
-				}
+			const item = await fromUuid(grant.uuid);
+			if (!item)
+				continue;
+			await this.addGrants(grants, skillGrants, item);
+			if (item.type == 'skill' || item.type == 'edge' || item.type == 'hindrance') {
+				if (grant?.mutation?.system?.die)
+					skillGrants[item.system.swid] = grant.mutation.system.die.sides;
+				else if (item.type == 'skill')
+					// Assume a skill granted gets d4 free.
+					skillGrants[item.system.swid] = 4;
+				else if (item?.system?.swid)
+					grants.push(item.system.swid);
+				else
+					grants.push(item.name);
 			}
 		}
 	}	
@@ -155,7 +149,7 @@ export class CharCheck {
 			// by Edges, ancestries, etc., are presumed to be free.
 			if (item.type == "ability" && item?.system?.subtype == 'archetype')
 				continue;
-			this.addGrants(grants, skillGrants, item);
+			await this.addGrants(grants, skillGrants, item);
 		}
 
 		let smartsSkills = 0;
@@ -504,6 +498,11 @@ export class CharCheck {
 		let left = actor.sheet.position.left;
 		let top = actor.sheet.position.top;
 		
+		if (game?.CheckDlg?.left != undefined) {
+			left = game.CheckDlg.left;
+			top = game.CheckDlg.top;
+		}
+		
 		const DLGWIDTH = 400;
 		const DLGHEIGHT = 500;
 
@@ -555,6 +554,7 @@ export class CharCheck {
 			if (CharCheck.activeDialogs[this.actor._id])
 				delete CharCheck.activeDialogs[this.actor._id];
 		}
+		game.CheckDlg = {left: this.dlg.position.left, top: this.dlg.position.top};
 		console.log(`swade-charcheck | Finished setting abilities for ${this.actor.name}`);
 	}
 
