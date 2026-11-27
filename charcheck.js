@@ -85,8 +85,9 @@ export class CharCheck {
 
 		// Check for this special ability gives humans an extra Edge.
 
-		if (this.actor.items.find(it => it.type == 'ability' && it.system.swid == 'adaptable'))
-			availEdges += 2;
+		if (this.actor.items.find(it => it.type == 'ability' &&
+			(it.system.swid == 'adaptable' || it.system.swid == 'humans-adaptable')))
+				availEdges += 2;
 
 		html.find("#availSkills").text(skillPoints);
 		html.find("#availAttr").text(attrPoints);
@@ -390,6 +391,8 @@ export class CharCheck {
 		// Compute gear price and look for items with unsatisfied strength requirements.
 
 		let totalPrice = 0;
+		const brawnyBonus = this.actor.items.find(it => it.type == 'edge' && it.system.swid == 'brawny') ? 2 : 0;
+
 		const gearTypes = ['armor', 'weapon', 'consumable', 'shield', 'gear'];
 		let gear  = this.actor.items.filter(it => gearTypes.includes(it.type));
 		for (let g of gear) {
@@ -399,7 +402,7 @@ export class CharCheck {
 				totalPrice += g.system.price * g.system.quantity;
 			if (g.system.minStr) {
 				const minstr = parseInt(g.system.minStr.replace(/^d/, ''));
-				if (this.actor.system.attributes.strength.die.sides < minstr)
+				if (this.actor.system.attributes.strength.die.sides + brawnyBonus < minstr)
 					prompt += `${g.name} requires Strength ${g.system.minStr}. `;
 			}
 		}
